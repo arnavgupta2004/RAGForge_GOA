@@ -45,8 +45,12 @@ pre-generation guardrail paying for itself exactly as designed.
 | guardrail | 0.18 | 0.30 | 0.43 | 0.18 |
 | **total** | **936** | **1105** | **1251** | **884** |
 
-**What this says, honestly**: generation is ~96% of total latency (851ms of
-884ms mean) — every other stage combined is under 35ms. This is exactly
+**What this says, honestly**: for TEXT queries specifically (no ASR — this
+benchmark never touches Sarvam), generation is ~96% of total latency (851ms
+of 884ms mean) — every other stage combined is under 35ms. This figure does
+NOT generalize to voice queries; see "Voice input latency" below, where ASR
+is a separate, real network cost that is frequently comparable to or larger
+than generation, not a rounding error next to it. This is exactly
 what the architecture was built to accept rather than fight: a real network
 round-trip to a hosted LLM cannot be made sub-200ms, so the design puts the
 optimization effort into *skipping that call entirely* when possible (the
@@ -87,6 +91,30 @@ ASR adds a second real network round-trip (~0.5-1.4s here) on top of
 generation, additive as expected — a full voice query is meaningfully
 slower than a typed one, and that's reported plainly rather than only
 benchmarking the cheaper text path and calling it "voice latency."
+
+**Post-deployment production re-check** (Railway, real Hindi audio, 3 back-
+to-back requests, after the thread-pinning fix in `docs/decisions.md`):
+
+| | asr | generation | total |
+|---|---|---|---|
+| run 1 | 1207ms | 712ms | 1937ms |
+| run 2 | 1193ms | 662ms | 1872ms |
+| run 3 | 1189ms | 618ms | 1822ms |
+
+Same pattern holds in production as it did locally: ASR is not a rounding
+error next to generation, it's the larger of the two here. In one live
+session during testing, a single request showed ASR at ~2.8-3.5s (still
+under 5s, within normal network variance for a real third-party API call,
+but a real reminder that Sarvam's round-trip time is not fixed) — that
+request's total (~3.5s) was correctly ASR-dominated, not a telemetry bug.
+The stage-to-field mapping in the frontend (`frontend/src/App.tsx`'s
+`stages` array) reads `asr`/`retrieval`/`generation`/`guardrail`/`total`
+directly off the same JSON keys the backend's `StageTimer` produces
+(`src/telemetry/timing.py`, `src/pipeline/orchestrator.py`) — verified by
+inspection, no relabeling or reassignment between backend and UI. When a
+query is refused before generation ever runs (a pre-generation guardrail
+gate), the `generation` key is simply absent from `latency_ms` and the UI
+correctly omits that bar rather than showing a misleading zero.
 
 ## Known-cheap paths (already measured, no API key needed)
 

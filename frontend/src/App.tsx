@@ -122,7 +122,7 @@ function App() {
     catch { setStage("idle"); setError("Unable to generate a grounded response. Check that the RAGForge API is available, then retry."); }
     finally { ids.forEach(clearTimeout); }
   };
-  const onMic = async () => { if (recorder.status === "recording") { const audio = await recorder.stop(); if (audio) run(queryAudio(audio), "voice query"); } else { await recorder.start(); setStage("listening"); } };
+  const onMic = async () => { if (recorder.status === "recording") { const audio = await recorder.stop(); if (audio) run(queryAudio(audio), "voice query"); } else { const started = await recorder.start(); if (started) setStage("listening"); } };
   const onText = (e: React.FormEvent) => { e.preventDefault(); if (input.trim() && !busy) run(queryText(input.trim())); };
   const onHindiDemo = async () => {
     if (busy) return;
