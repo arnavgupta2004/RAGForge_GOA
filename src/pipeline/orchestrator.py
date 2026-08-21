@@ -105,6 +105,32 @@ async def run_pipeline(
     audio_bytes: bytes | None = None,
     audio_filename: str = "audio.wav",
 ) -> PipelineResponse:
+    """Public entry point. Guarantees every call resolves to a typed
+    PipelineResponse (answered/refused/error) -- never a raw exception --
+    even for failure modes the stage-specific handling below doesn't
+    anticipate (e.g. a corrupted index, an unexpected SDK exception shape).
+    FastAPI's default error handling wouldn't leak a stack trace either way,
+    but it also wouldn't return latency_ms/request_id, which every client
+    response is expected to have."""
+    try:
+        return await _run_pipeline(deps, query_text, audio_bytes, audio_filename)
+    except Exception as e:
+        logger.exception("Unhandled pipeline failure: %s", e)
+        return PipelineResponse(
+            request_id=uuid.uuid4().hex,
+            status="error",
+            answer="Something went wrong processing that request. Please try again.",
+            confidence=0.0,
+            latency_ms={"total": 0.0},
+        )
+
+
+async def _run_pipeline(
+    deps: PipelineDeps,
+    query_text: str | None,
+    audio_bytes: bytes | None,
+    audio_filename: str,
+) -> PipelineResponse:
     request_id = uuid.uuid4().hex
     timer = StageTimer()
     transcript: str | None = None

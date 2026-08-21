@@ -1,0 +1,9 @@
+# Dev/offline-only dependencies. NOT installed in the production Docker
+# image -- only needed to run scripts/download_dataset.py or the test suite.
+-r requirements.txt
+
+datasets==4.8.3
+pandas>=2.2
+
+pytest==8.3.4
+pytest-asyncio==0.25.2

@@ -121,19 +121,53 @@ results: [docs/evaluation.md](docs/evaluation.md).
 
 ## Deployment
 
-Backend: Dockerfile + `render.yaml` (Render). Indices are committed via Git
-LFS (`data/processed/`), so startup never recomputes embeddings or rebuilds
-an index — it only loads what's already in the image. Frontend: Vercel (see
-`frontend/`, once built). See [docs/architecture.md](docs/architecture.md)
-for what's in the request path at runtime vs. what's offline-only.
+**Backend → Railway. Frontend → Vercel.** (An earlier `render.yaml` is kept
+for reference but is not the active deployment target.)
 
-## Setup
+Indices are committed via Git LFS (`data/processed/`), and the embedding +
+reranker model weights are baked into the Docker image at build time
+(`Dockerfile`) — so a fresh container never recomputes embeddings, rebuilds
+an index, or downloads anything from HuggingFace at startup or request
+time. It only loads what's already in the image. See
+[docs/architecture.md](docs/architecture.md) for what's in the request path
+at runtime vs. what's offline-only.
+
+**Railway (backend)**
+
+1. Connect this repo (or `railway up` from a local checkout). Railway
+   detects `railway.json` and builds from the committed `Dockerfile`.
+2. Set environment variables in the Railway service settings:
+   - `GEMINI_API_KEY`
+   - `SARVAM_API_KEY`
+   - `RAGFORGE_CONFIG=configs/production.yaml`
+   - `CORS_ORIGINS=https://your-app.vercel.app` (the deployed Vercel URL —
+     comma-separated if you need more than one, e.g. to also allow a
+     Vercel preview URL)
+3. Railway assigns the container's port via `$PORT`; the Dockerfile's `CMD`
+   already binds to it (`--port ${PORT:-8420}`) rather than a hardcoded port.
+4. Verify: `curl https://<railway-url>/health` should return
+   `{"status": "ok", "chunks_indexed": 122580, ...}`.
+
+**Vercel (frontend)**
+
+1. Import `frontend/` as the project root (framework preset: Vite).
+2. Set `VITE_API_BASE_URL=https://<your-railway-backend>` as an environment
+   variable in Vercel's project settings (this is a public, non-secret
+   value — no API keys ever go in the frontend).
+3. Build command `npm run build`, output directory `dist` (Vercel's Vite
+   preset sets these automatically).
+
+## Setup (local development)
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # includes requirements.txt + test/dataset tooling
 cp .env.example .env   # fill in GEMINI_API_KEY, SARVAM_API_KEY
 ```
+
+(`requirements.txt` alone is the minimal production/runtime set the Docker
+image installs; `requirements-dev.txt` adds `datasets`/`pandas`/`pytest` for
+local rebuilding and testing.)
 
 The curated dataset subset and prebuilt indices are already committed
 (`data/raw/msmarco_xi.jsonl`, `data/processed/`). To rebuild from scratch:
@@ -149,10 +183,19 @@ Run the API:
 uvicorn api.main:app --reload --port 8420
 ```
 
+Run the frontend (separate terminal):
+
+```bash
+cd frontend
+npm install
+cp .env.example .env   # VITE_API_BASE_URL, defaults to localhost:8420 if unset
+npm run dev
+```
+
 Run tests:
 
 ```bash
-pytest tests/unit tests/integration -q
+pytest tests/unit tests/integration tests/benchmark -q
 ```
 
 ## API

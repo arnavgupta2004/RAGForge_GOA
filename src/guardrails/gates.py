@@ -65,12 +65,56 @@ def context_sufficiency_gate(context: list[ContextItem], min_chunks: int) -> Gat
     return GateResult(passed=True)
 
 
+_SELF_DECLINE_PATTERNS = [
+    re.compile(p, re.IGNORECASE)
+    for p in [
+        r"does not (contain|provide|include)",
+        r"doesn'?t (contain|provide|include|have)",
+        r"(no|not) (enough|sufficient) (information|evidence|context)",
+        r"insufficient (information|evidence|context)",
+        r"context does not",
+        r"context (doesn'?t|does not) (answer|address)",
+        r"cannot (be )?answer(ed)?",
+        r"unable to answer",
+        r"i (don'?t|do not) have (enough|sufficient|specific)",
+    ]
+]
+# Observed in production (Hindi query, model declined in Hindi -- see
+# docs/decisions.md): lexical overlap alone can't catch a non-English
+# decline, so a few concrete Hindi phrasings are matched directly rather
+# than attempting a general multilingual solution.
+_SELF_DECLINE_PATTERNS_HI = [
+    re.compile(p) for p in [
+        r"जानकारी उपलब्ध नहीं",
+        r"विशिष्ट जानकारी नहीं",
+        r"पर्याप्त जानकारी नहीं",
+        r"संदर्भ में उपलब्ध नहीं",
+    ]
+]
+
+
+def looks_like_self_decline(answer: str) -> bool:
+    """Catches the case a pure lexical-overlap check misses: the model
+    HONESTLY explains that the context doesn't answer the question, but in
+    doing so it naturally repeats the context's own topic words (e.g. "the
+    context only discusses X, Y, Z"), which can score as high overlap
+    despite the answer being substantively a decline, not a grounded claim.
+    Checked before the overlap heuristic so an honest decline is reported as
+    a refusal, not a spuriously "grounded" answer."""
+    return any(p.search(answer) for p in _SELF_DECLINE_PATTERNS) or any(
+        p.search(answer) for p in _SELF_DECLINE_PATTERNS_HI
+    )
+
+
 def groundedness_check(answer: str, context: list[ContextItem], min_overlap: float) -> tuple[GateResult, float]:
     """Lexical-overlap groundedness proxy: what fraction of the answer's
     content words also appear somewhere in the retrieved context. Cheap,
     deterministic, and language-model-free -- appropriate as a fast guardrail
     layered underneath (not instead of) the generation prompt's own
     "answer only from context" instruction."""
+    if looks_like_self_decline(answer):
+        return GateResult(passed=False, reason="model declined to answer from the retrieved context"), 0.0
+
     answer_words = _content_words(answer)
     if not answer_words:
         return GateResult(passed=False, reason="empty or non-substantive answer"), 0.0

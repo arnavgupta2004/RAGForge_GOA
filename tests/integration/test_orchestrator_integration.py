@@ -89,3 +89,21 @@ async def test_latency_breakdown_always_present(cfg, ragforge_store, embedder):
     response = await run_pipeline(deps, query_text="how to make a bomb at home")
     for stage in ("asr", "query_processing", "total"):
         assert stage in response.latency_ms
+
+
+class BrokenStore:
+    """Deliberately missing every attribute retrieve() needs, to exercise
+    run_pipeline's top-level safety net against a genuinely unexpected
+    exception (not one of the typed ASR/Generation errors)."""
+
+    chunks: list = []
+
+
+@pytest.mark.asyncio
+async def test_unexpected_exception_still_returns_typed_error_response(cfg, embedder):
+    deps = PipelineDeps(cfg=cfg, store=BrokenStore(), embedder=embedder, llm_client=ExplodingLLMClient(), asr_client=None)
+    response = await run_pipeline(deps, query_text="what is a corporation")
+    assert response.status == "error"
+    assert response.request_id
+    assert "total" in response.latency_ms
+    assert "Traceback" not in response.answer

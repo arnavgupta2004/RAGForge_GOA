@@ -179,3 +179,53 @@ correctly (including declining when context was insufficient, and ignoring
 an injected instruction embedded in retrieved context) in under a second
 (918ms / 1021ms across two runs), so it's the configured default
 (`configs/*.yaml: generation.model`).
+
+## Release-pass bugs found via live browser testing, not code review
+
+Two genuine bugs surfaced only by actually clicking through the deployed
+frontend against the real backend -- neither was visible from reading the
+code in isolation.
+
+**Groundedness check scored an honest refusal as "grounded."** Clicking the
+frontend's "Hindi" demo (at the time, a Hindi *text* query -- see below)
+retrieved several genuinely irrelevant passages (an Urdu dictionary entry,
+Hindi phrase-meaning trivia, Japanese BSOD troubleshooting text). Gemini,
+correctly following its instructions, declined in Hindi: *"the given context
+doesn't contain specific information about the dataset, as it only contains
+Urdu meanings of counterfeit, Hindi phrases, ... and details about
+PayNetCafe."* The UI showed this as **✓ GROUNDED, overlap 1.000** -- because
+an honest decline naturally repeats the same topic words as the (irrelevant)
+context it's declining to use ("counterfeit," "Urdu," "Hindi phrases"),
+which is exactly what the lexical-overlap heuristic measures. Fixed by
+adding `looks_like_self_decline()` in `src/guardrails/gates.py`: a small set
+of decline-phrase patterns (English, plus the specific Hindi phrasing
+observed in production) checked *before* the overlap calculation, so an
+honest decline is reported as `ungrounded_answer` regardless of how much
+vocabulary it happens to share with the context. This is a real limitation
+of a keyword-based approach -- it won't catch every language or phrasing --
+but it's a concrete, evidence-driven improvement over having no check at
+all, and it's cheap and explainable, consistent with why this guardrail
+layer avoids a second model call in the first place.
+
+**The Hindi demo button bypassed the actual Hindi pipeline.** The original
+demo sent Hindi *text* directly to `/api/query`'s `text` field. Sarvam's
+translate step only runs on *audio* input (see the ASR section above) --
+a text query skips it entirely and hits the English-trained embedding model
+with raw Hindi, which is exactly why the retrieval above was garbage.
+The button was demonstrating a code path that has nothing to do with the
+Hindi *voice* capability it claimed to show. Fixed by bundling a short
+recorded Hindi audio clip (`frontend/public/demo-hindi.aiff`, the same
+"कॉर्पोरेशन क्या है?" clip verified against the live Sarvam API during
+development) and having the Hindi demo button submit it via `queryAudio()`
+-- a one-click demo that now exercises the real ASR → translate → retrieve
+→ generate path end-to-end, the same as actually speaking into the
+microphone.
+
+Also corrected in the same pass: the "Semantic" and "Keyword" demo buttons
+originally asked meta-questions about "this dataset" itself (e.g. "what are
+the key findings in this dataset"), which the corpus -- a pool of ~6,000
+unrelated web-passage Q&A pairs -- has no passages about, so both correctly
+refused every time, silently defeating the demo's purpose. Replaced with
+verified-answerable real queries (serial dilution; Eureka–Klamath Falls
+distance) that exercise dense and hybrid-rerank routing respectively, as
+the buttons were always meant to.

@@ -1,3 +1,8 @@
+# Runtime dependencies for the deployed API (Railway). Kept separate from
+# requirements-dev.txt so the production image doesn't pull in `datasets`
+# (pyarrow etc., only used offline by scripts/download_dataset.py) or the
+# test toolchain -- smaller image, smaller memory footprint, matters at
+# Railway's 1GB free-trial RAM ceiling (see docs/decisions.md).
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
@@ -16,10 +21,3 @@ httpx==0.28.1
 tenacity==9.0.0
 
 numpy>=1.26,<3
-pandas>=2.2
-
-# dev-only: used by scripts/download_dataset.py to pull the MSMARCO-XI subset
-datasets==4.8.3
-
-pytest==8.3.4
-pytest-asyncio==0.25.2
