@@ -45,7 +45,7 @@ router:
   entity_query_types: [ENTITY, PERSON, LOCATION, NUMERIC]
 
 guardrails:
-  min_retrieval_score: 0.28
+  min_retrieval_score: 0.55
   min_context_chunks: 1
   groundedness_min_overlap: 0.35
 

@@ -26,7 +26,7 @@ class IndexStore:
             for line in f:
                 self.chunks.append(Chunk.model_validate_json(line))
 
-        self.dense_index = load_dense_index(variant_dir / "dense.faiss")
+        self.dense_index = load_dense_index(variant_dir / "dense.npy")
         self.sparse_index = load_sparse_index(variant_dir / "bm25") if self.meta.get("sparse_index") else None
 
     def chunk(self, idx: int) -> Chunk:

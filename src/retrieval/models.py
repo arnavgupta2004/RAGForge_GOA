@@ -19,6 +19,7 @@ class RetrievedChunk(BaseModel):
 
 
 class ContextItem(BaseModel):
+    chunk_id: str
     doc_id: str
     text: str
     expanded: bool
@@ -37,3 +38,6 @@ class RetrievalResult(BaseModel):
     retrieved: list[RetrievedChunk]
     context: list[ContextItem]
     top_score: float
+    embedding_ms: float
+    retrieval_ms: float
+    reranking_ms: float

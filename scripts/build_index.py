@@ -113,7 +113,7 @@ def build_variant(
 
     print(f"[{variant}] building dense index...", file=sys.stderr)
     dense_index = build_dense_index(embeddings)
-    save_dense_index(dense_index, out_dir / "dense.faiss")
+    save_dense_index(dense_index, out_dir / "dense.npy")
 
     sparse_built = False
     if variant == "ragforge":

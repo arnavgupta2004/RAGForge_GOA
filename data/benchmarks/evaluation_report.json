@@ -1,0 +1,41 @@
+{
+  "generated_at": "2026-08-21T16:34:27Z",
+  "retrieval_and_ablation": {
+    "n": 150,
+    "top_k": 5,
+    "ragforge": {
+      "recall_at_k": 0.8667,
+      "mrr": 0.5923,
+      "strategy_distribution": {
+        "dense": 82,
+        "multi_query": 29,
+        "hybrid": 38,
+        "hybrid_rerank": 1
+      },
+      "strategy_recall": {
+        "dense": 0.8537,
+        "multi_query": 0.931,
+        "hybrid": 0.8421,
+        "hybrid_rerank": 1.0
+      },
+      "hit_chunking_strategy_distribution": {
+        "atomic": 99,
+        "overlapping": 4,
+        "sentence": 19,
+        "fixed": 8
+      }
+    },
+    "baseline": {
+      "recall_at_k": 0.8667,
+      "mrr": 0.5804
+    },
+    "context_expansion_subset": {
+      "n": 34,
+      "recall_at_k": 0.9412
+    }
+  },
+  "guardrails": {
+    "skipped": true,
+    "reason": "pass --with-generation to run (needs ANTHROPIC_API_KEY)"
+  }
+}

@@ -7,7 +7,6 @@ python-multipart==0.0.20
 python-dotenv==1.0.1
 
 sentence-transformers==3.3.1
-faiss-cpu==1.15.0
 bm25s==0.3.10
 pysbd==0.3.4
 tiktoken==0.14.0
