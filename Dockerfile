@@ -13,7 +13,7 @@
 # record. This stage makes LFS resolution the Dockerfile's own
 # responsibility, independent of whatever the surrounding platform's clone
 # step does or doesn't do -- portable to Railway, Render, Fly.io, etc.
-FROM alpine/git:v2.47.3 AS lfs-fetch
+FROM alpine/git:v2.49.1 AS lfs-fetch
 RUN apk add --no-cache git-lfs && git lfs install
 RUN git clone --depth 1 --branch main https://github.com/arnavgupta2004/RAGForge_GOA.git /repo \
     && cd /repo && git lfs pull \
