@@ -6,6 +6,10 @@
 
 Built for HackerHouse Goa 2026 — Task 2: Build a Voice-Enabled RAG Model.
 
+**Live demo: https://ragforge-goa.vercel.app**
+(backend: `https://ragforge-goa-api-production.up.railway.app`, `/health`
+for liveness)
+
 ---
 
 ## The problem
@@ -121,8 +125,9 @@ results: [docs/evaluation.md](docs/evaluation.md).
 
 ## Deployment
 
-**Backend → Railway. Frontend → Vercel.** (An earlier `render.yaml` is kept
-for reference but is not the active deployment target.)
+**Backend → Railway. Frontend → Vercel. Both are live** at the URLs above.
+(An earlier `render.yaml` is kept for reference but is not the active
+deployment target.)
 
 Indices are committed via Git LFS (`data/processed/`), and the embedding +
 reranker model weights are baked into the Docker image at build time
