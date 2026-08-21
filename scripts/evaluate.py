@@ -9,7 +9,7 @@ Two independent parts, both real (no fabricated numbers):
    chunking strategy and isolates the "context expansion" subset (queries
    whose gold passage was long enough to be split into children).
 
-2. Guardrail + generation eval (needs ANTHROPIC_API_KEY): runs the full
+2. Guardrail + generation eval (needs GEMINI_API_KEY): runs the full
    pipeline over a labeled test set spanning the required categories --
    easy factual, semantic, keyword-heavy, ambiguous, context-expansion,
    no-answer-in-dataset, off-topic, adversarial, prompt-injection, noisy-ASR
@@ -254,7 +254,7 @@ async def main() -> None:
     retrieval_report = await evaluate_retrieval(cfg, retrieval_sample, top_k=cfg.retrieval.rerank_top_k)
     print(f"retrieval eval done in {time.perf_counter() - t0:.1f}s", file=sys.stderr)
 
-    guardrail_report: dict = {"skipped": True, "reason": "pass --with-generation to run (needs ANTHROPIC_API_KEY)"}
+    guardrail_report: dict = {"skipped": True, "reason": "pass --with-generation to run (needs GEMINI_API_KEY)"}
     if args.with_generation:
         no_answer = [q for q in all_queries if not q["is_answerable"]]
         half = args.guardrail_sample_size // 2

@@ -112,7 +112,7 @@ async def query(
         raise HTTPException(status_code=400, detail="Provide either 'text' or an 'audio' file")
 
     if STATE.get("llm_client") is None:
-        raise HTTPException(status_code=503, detail="Generation is not configured (ANTHROPIC_API_KEY missing)")
+        raise HTTPException(status_code=503, detail="Generation is not configured (GEMINI_API_KEY missing)")
 
     audio_bytes = None
     filename = "audio.wav"
@@ -199,7 +199,7 @@ async def benchmark(n: int = 20) -> dict:
     docs/latency.md."""
     n = max(1, min(n, 50))
     if STATE.get("llm_client") is None:
-        raise HTTPException(status_code=503, detail="Generation is not configured (ANTHROPIC_API_KEY missing)")
+        raise HTTPException(status_code=503, detail="Generation is not configured (GEMINI_API_KEY missing)")
 
     cfg = STATE["cfg"]
     queries_path = cfg.path(cfg.data.processed_dir) / "queries.jsonl"

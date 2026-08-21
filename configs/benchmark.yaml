@@ -50,8 +50,8 @@ guardrails:
   groundedness_min_overlap: 0.35
 
 generation:
-  provider: anthropic
-  model: claude-haiku-4-5-20251001
+  provider: gemini
+  model: gemini-flash-latest
   max_tokens: 300
   temperature: 0.0
   timeout_s: 12

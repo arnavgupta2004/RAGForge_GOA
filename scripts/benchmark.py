@@ -2,7 +2,7 @@
 
 Runs a real sample of queries through the full live pipeline (real ASR-free
 text queries -> router -> retrieval -> generation -> guardrails, hitting the
-actual Anthropic API) and reports P50/P70/P90/P95/P99/P100, mean, min, max --
+actual Gemini API) and reports P50/P70/P90/P95/P99/P100, mean, min, max --
 both for total latency and each stage. No numbers are hard-coded; this is the
 only source of truth for docs/latency.md.
 
