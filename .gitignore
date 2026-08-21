@@ -1,0 +1,26 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.egg-info/
+
+# raw dataset is pulled via scripts/download_dataset.py, not committed in full
+data/raw/*
+!data/raw/.gitkeep
+
+# processed indices are large binary artifacts; regenerate via scripts/build_index.py
+data/processed/*
+!data/processed/.gitkeep
+
+data/benchmarks/*.jsonl
+!data/benchmarks/.gitkeep
+
+node_modules/
+dist/
+frontend/dist/
+.DS_Store
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

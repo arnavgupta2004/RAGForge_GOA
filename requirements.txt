@@ -1,0 +1,26 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+pyyaml==6.0.2
+python-multipart==0.0.20
+python-dotenv==1.0.1
+
+sentence-transformers==3.3.1
+faiss-cpu==1.15.0
+bm25s==0.3.10
+pysbd==0.3.4
+tiktoken==0.14.0
+
+anthropic==0.84.0
+httpx==0.28.1
+tenacity==9.0.0
+
+numpy>=1.26,<3
+pandas>=2.2
+
+# dev-only: used by scripts/download_dataset.py to pull the MSMARCO-XI subset
+datasets==4.8.3
+
+pytest==8.3.4
+pytest-asyncio==0.25.2

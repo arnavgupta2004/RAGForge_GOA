@@ -1,0 +1,68 @@
+app:
+  env: benchmark
+  log_level: WARNING
+
+data:
+  raw_path: data/raw/msmarco_xi.jsonl
+  processed_dir: data/processed
+
+chunking:
+  # a chunk stays atomic (parent == child) below this many tokens;
+  # only longer passages get split, so strategy diversity reflects real
+  # passage-length variation rather than an arbitrary split-everything rule.
+  atomic_max_tokens: 90
+  fixed:
+    window_tokens: 64
+    overlap_tokens: 0
+  overlapping:
+    window_tokens: 64
+    overlap_tokens: 16
+  sentence:
+    sentences_per_chunk: 2
+
+embeddings:
+  model_name: sentence-transformers/msmarco-MiniLM-L6-cos-v5
+  batch_size: 128
+  device: cpu
+
+sparse:
+  backend: bm25s
+  k1: 1.5
+  b: 0.75
+
+retrieval:
+  top_k_dense: 20
+  top_k_sparse: 20
+  top_k_fused: 10
+  rerank_top_k: 5
+  hybrid_alpha: 0.5   # weight on normalized dense score vs sparse score
+  context_expansion_neighbors: 1
+
+router:
+  # heuristic thresholds tuned against configs/benchmark.yaml sweep, see docs/decisions.md
+  min_query_tokens_for_multi_query: 3
+  lexical_specificity_threshold: 0.6
+  entity_query_types: [ENTITY, PERSON, LOCATION, NUMERIC]
+
+guardrails:
+  min_retrieval_score: 0.28
+  min_context_chunks: 1
+  groundedness_min_overlap: 0.35
+
+generation:
+  provider: anthropic
+  model: claude-haiku-4-5-20251001
+  max_tokens: 300
+  temperature: 0.0
+  timeout_s: 12
+  max_retries: 1
+
+asr:
+  provider: sarvam
+  model: saaras:v3
+  mode: translate
+  timeout_s: 15
+  max_retries: 1
+
+telemetry:
+  log_dir: data/benchmarks
