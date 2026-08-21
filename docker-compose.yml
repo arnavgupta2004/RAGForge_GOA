@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8420:8420"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SARVAM_API_KEY=${SARVAM_API_KEY}
+      - RAGFORGE_CONFIG=configs/development.yaml
+      - CORS_ORIGINS=http://localhost:5173
+    volumes:
+      - ./data/benchmarks:/app/data/benchmarks

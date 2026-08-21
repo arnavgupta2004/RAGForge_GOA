@@ -1,0 +1,11 @@
+{
+  "variant": "baseline",
+  "num_chunks": 91619,
+  "num_queries": 6000,
+  "embedding_model": "sentence-transformers/msmarco-MiniLM-L6-cos-v5",
+  "embedding_dim": 384,
+  "sparse_index": false,
+  "built_at": "2026-08-21T15:56:38Z",
+  "chunk_ms": 2032.2,
+  "embed_ms": 210340.9
+}

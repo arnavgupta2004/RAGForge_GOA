@@ -5,14 +5,15 @@ venv/
 .env
 *.egg-info/
 
-# raw dataset is pulled via scripts/download_dataset.py, not committed in full
+# the curated raw subset (msmarco_xi.jsonl, ~3.4MB) IS committed for full
+# reproducibility without re-hitting HuggingFace; only re-downloadable scratch
+# state is ignored here
 data/raw/*
 !data/raw/.gitkeep
+!data/raw/msmarco_xi.jsonl
 
-# processed indices are large binary artifacts; regenerate via scripts/build_index.py
-data/processed/*
-!data/processed/.gitkeep
-
+# processed indices ARE committed via Git LFS (see .gitattributes) so a fresh
+# clone can serve immediately without rerunning scripts/build_index.py
 data/benchmarks/*.jsonl
 !data/benchmarks/.gitkeep
 

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: ragforge-goa-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: RAGFORGE_CONFIG
+        value: configs/production.yaml
+      - key: CORS_ORIGINS
+        value: https://ragforge-goa.vercel.app

@@ -1,0 +1,11 @@
+{
+  "variant": "ragforge",
+  "num_chunks": 122580,
+  "num_queries": 6000,
+  "embedding_model": "sentence-transformers/msmarco-MiniLM-L6-cos-v5",
+  "embedding_dim": 384,
+  "sparse_index": true,
+  "built_at": "2026-08-21T16:04:03Z",
+  "chunk_ms": 12742.4,
+  "embed_ms": 429989.5
+}
