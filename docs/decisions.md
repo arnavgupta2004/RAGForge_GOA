@@ -221,6 +221,27 @@ development) and having the Hindi demo button submit it via `queryAudio()`
 → generate path end-to-end, the same as actually speaking into the
 microphone.
 
+**Cross-encoder reranker OOM-killed the container on Railway's 1GB free
+trial.** The first live request after deploy succeeded; the second
+(routed to `hybrid_rerank`, which lazily loads
+`cross-encoder/ms-marco-MiniLM-L-6-v2` on first use) reproducibly killed the
+process (`Killed` in the runtime logs, confirmed twice in a row). Loading a
+second model into an already-warm process appears to spike memory well
+beyond whatever the steady state would be. Rather than risk a worse outcome
+-- eagerly loading both models at startup could just move the failure to
+"container never starts at all" if the true combined footprint doesn't fit
+in 1GB either -- the reranking path is disabled specifically in production
+(`configs/production.yaml: retrieval.enable_reranking: false`), falling
+back to plain hybrid fusion for the queries that would have used it. This
+is a config-level decision, not a retrieval rewrite: the strategy, the
+router, and the reranker code are all untouched and still fully exercised
+in `configs/development.yaml`/`configs/benchmark.yaml`. The practical cost
+is small -- `hybrid_rerank` was selected for 1/150 queries in the local
+evaluation (see `docs/evaluation.md`) -- against eliminating a reproducible
+crash entirely. Upgrading Railway's plan for more RAM was the alternative;
+left to the user's judgment rather than spent unilaterally, since it's a
+real payment decision.
+
 Also corrected in the same pass: the "Semantic" and "Keyword" demo buttons
 originally asked meta-questions about "this dataset" itself (e.g. "what are
 the key findings in this dataset"), which the corpus -- a pool of ~6,000

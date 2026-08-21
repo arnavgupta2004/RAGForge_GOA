@@ -39,6 +39,7 @@ class RetrievalConfig(BaseModel):
     rerank_top_k: int
     hybrid_alpha: float
     context_expansion_neighbors: int
+    enable_reranking: bool = True
 
 
 class RouterConfig(BaseModel):

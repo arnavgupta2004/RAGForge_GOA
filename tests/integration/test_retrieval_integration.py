@@ -59,3 +59,20 @@ async def test_timing_fields_populated(cfg, ragforge_store, embedder):
     assert result.embedding_ms >= 0
     assert result.retrieval_ms >= 0
     assert result.reranking_ms >= 0
+
+
+@pytest.mark.asyncio
+async def test_reranking_disabled_falls_back_to_hybrid_without_loading_reranker(cfg, ragforge_store, embedder):
+    # Reproduces the production config (configs/production.yaml:
+    # enable_reranking: false) that avoids the OOM crash observed on
+    # Railway's 1GB trial plan when the cross-encoder loads on first use.
+    decision = _route(cfg, "How far is Eureka CA to Klamath Falls?")
+    assert decision.strategy == "hybrid_rerank"
+
+    disabled_cfg = cfg.retrieval.model_copy(update={"enable_reranking": False})
+    result = await retrieve(
+        "How far is Eureka CA to Klamath Falls?", decision, ragforge_store, embedder, disabled_cfg
+    )
+    assert result.strategy == "hybrid"
+    assert "reranking disabled" in result.strategy_reason
+    assert all(c.rerank_score is None for c in result.retrieved)

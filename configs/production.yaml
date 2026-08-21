@@ -37,6 +37,12 @@ retrieval:
   rerank_top_k: 5
   hybrid_alpha: 0.5   # weight on normalized dense score vs sparse score
   context_expansion_neighbors: 1
+  # Disabled specifically in production: loading the cross-encoder reranker
+  # on first hybrid_rerank-routed request reproducibly OOM-killed the
+  # container on Railway's 1GB free-trial RAM ceiling (see docs/decisions.md).
+  # Falls back to plain hybrid fusion for those queries -- rare in practice
+  # (1/150 in the local eval, see docs/evaluation.md) and no crash risk.
+  enable_reranking: false
 
 router:
   # heuristic thresholds tuned against configs/benchmark.yaml sweep, see docs/decisions.md

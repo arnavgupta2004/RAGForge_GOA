@@ -97,6 +97,16 @@ async def retrieve(
     cfg: RetrievalConfig,
 ) -> RetrievalResult:
     strategy = decision.strategy
+    strategy_reason = decision.reason
+    if strategy == "hybrid_rerank" and not cfg.enable_reranking:
+        # The cross-encoder reranker is disabled in this deployment (see
+        # configs/production.yaml + docs/decisions.md): loading it on first
+        # use reproducibly OOM-killed the container on Railway's 1GB
+        # free-trial RAM ceiling. Falls back to plain hybrid fusion, which
+        # was already computed for this strategy anyway -- no quality cliff,
+        # just no rerank pass.
+        strategy = "hybrid"
+        strategy_reason = f"{decision.reason} (reranking disabled in this deployment; using hybrid fusion)"
     query_variants = [query_text] if strategy != "multi_query" else generate_variants(query_text)
 
     embed_t0 = time.perf_counter()
@@ -184,7 +194,7 @@ async def retrieve(
 
     return RetrievalResult(
         strategy=strategy,
-        strategy_reason=decision.reason,
+        strategy_reason=strategy_reason,
         query_variants=query_variants,
         retrieved=candidates,
         context=context,
