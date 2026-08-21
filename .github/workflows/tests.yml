@@ -1,0 +1,27 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Unit + integration tests
+        # no GEMINI_API_KEY/SARVAM_API_KEY in CI -- these tests only exercise
+        # paths that don't require live external calls (see tests/integration)
+        run: pytest tests/unit tests/integration tests/benchmark -q
