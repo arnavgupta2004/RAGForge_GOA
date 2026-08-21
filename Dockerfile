@@ -2,12 +2,27 @@
 # (data/processed/), so this image never runs scripts/build_index.py --
 # startup only loads precomputed artifacts, matching the "no recomputation
 # at request time" requirement.
+#
+# LFS fetch stage: does its own fresh clone + `git lfs pull` rather than
+# trusting the outer build context to have already resolved LFS pointers.
+# Verified necessary in production: Railway's own git checkout (before
+# handing off to `docker build`) does NOT resolve LFS pointers, so
+# data/processed/**/*.npy and *.jsonl arrived in the container as literal
+# ~130-byte "version https://git-lfs.github.com/spec/v1..." pointer text --
+# the app crashed at startup trying to JSON-parse a pointer file as a chunk
+# record. This stage makes LFS resolution the Dockerfile's own
+# responsibility, independent of whatever the surrounding platform's clone
+# step does or doesn't do -- portable to Railway, Render, Fly.io, etc.
+FROM alpine/git:v2.47.3 AS lfs-fetch
+RUN apk add --no-cache git-lfs && git lfs install
+RUN git clone --depth 1 --branch main https://github.com/arnavgupta2004/RAGForge_GOA.git /repo \
+    && cd /repo && git lfs pull \
+    && find data/processed data/raw -name "*.npy" -o -name "*.jsonl" | xargs -I{} sh -c \
+       'head -c 60 "{}" | grep -q "git-lfs.github.com" && echo "LFS POINTER NOT RESOLVED: {}" && exit 1 || true'
+
 FROM python:3.11-slim
 
 WORKDIR /app
-
-RUN apt-get update && apt-get install -y --no-install-recommends git-lfs \
-    && rm -rf /var/lib/apt/lists/*
 
 # CPU-only torch explicitly, BEFORE sentence-transformers pulls in a
 # default (CUDA-bundled, ~5x larger, higher RSS) build from PyPI. This
@@ -31,8 +46,8 @@ CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')"
 COPY api/ api/
 COPY src/ src/
 COPY configs/ configs/
-COPY data/processed/ data/processed/
-COPY data/raw/ data/raw/
+COPY --from=lfs-fetch /repo/data/processed/ data/processed/
+COPY --from=lfs-fetch /repo/data/raw/ data/raw/
 
 ENV RAGFORGE_CONFIG=configs/production.yaml
 EXPOSE 8420
