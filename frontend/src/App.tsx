@@ -94,7 +94,7 @@ function RouterDecision({ result }: { result: PipelineResponse }) {
 function Latency({ result, metrics }: { result: PipelineResponse; metrics: MetricsResponse | null }) {
   const total = result.latency_ms.total || 1;
   const bars = [["ASR", "asr"], ["Routing", "query_processing"], ["Retrieval", "retrieval"], ["Generation", "generation"], ["Grounding", "guardrail"]] as const;
-  return <details className="panel telemetry"><summary><span><p className="eyebrow">Measured, not estimated</p><h2>System telemetry</h2></span><span className="mono">⌄</span></summary>
+  return <details className="panel telemetry" open><summary><span><p className="eyebrow">Measured, not estimated</p><h2>System telemetry</h2></span><span className="mono">⌄</span></summary>
     <div className="telemetry-grid"><div><p className="label">Current request</p><b className="big-number">{ms(total)}</b><div className="latency-bars">{bars.map(([label, key]) => { const value = result.latency_ms[key]; return value === undefined ? null : <div className="latency-row" key={key}><span>{label}</span><i><em style={{ width: `${Math.max(2, value / total * 100)}%` }} /></i><b>{ms(value)}</b></div>; })}</div></div>
       <div className="benchmark"><p className="label">100-query live benchmark</p><div className="benchmark-values"><span><b>936</b><small>ms P50</small></span><span><b>970</b><small>ms P70</small></span><span><b>1,105</b><small>ms P95</small></span><span><b>1,755</b><small>ms P100</small></span></div><p>Generation dominated the warm-run median (897 ms). Retrieval P50 was 6 ms.</p>{metrics?.latency_ms && <small className="mono muted">LIVE LOG · {metrics.count} REQUESTS · P50 {ms(metrics.latency_ms.p50)}</small>}</div></div>
   </details>;
