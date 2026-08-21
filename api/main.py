@@ -12,9 +12,24 @@ at startup via the lifespan handler -- no request recomputes them.
 
 from __future__ import annotations
 
+import os
+
+# Set BEFORE torch loads (transitively, via sentence-transformers below) --
+# OpenMP/MKL read these at library-load time, not per-call. Without this,
+# torch sizes its intra-op thread pool to the container's VISIBLE core
+# count, which on a cgroup-limited host (Railway's trial plan gives a
+# fraction of a shared vCPU) is wildly larger than the CPU quota actually
+# available. The result isn't just "slower" -- it's catastrophic
+# thread-thrashing: a query embedding that takes ~5-25ms locally was
+# measured taking 12-15 SECONDS in production before this fix (reproduced
+# consistently across multiple requests, not a one-off spike). Pinning to a
+# single thread avoids the oversubscription entirely.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
 import json
 import logging
-import os
 import random
 import sys
 import time
@@ -28,8 +43,12 @@ from fastapi.middleware.cors import CORSMiddleware
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv()
 
-from src.asr.sarvam_client import ASRError, SarvamClient
-from src.embeddings.embedder import Embedder
+import torch  # noqa: E402
+
+torch.set_num_threads(1)
+
+from src.asr.sarvam_client import ASRError, SarvamClient  # noqa: E402
+from src.embeddings.embedder import Embedder  # noqa: E402
 from src.generation.llm_client import GenerationError, LLMClient
 from src.pipeline.orchestrator import PipelineDeps, run_pipeline
 from src.pipeline.schemas import PipelineResponse

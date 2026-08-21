@@ -242,6 +242,37 @@ crash entirely. Upgrading Railway's plan for more RAM was the alternative;
 left to the user's judgment rather than spent unilaterally, since it's a
 real payment decision.
 
+**PyTorch thread oversubscription made query embedding ~700x slower in
+production than locally.** After fixing the OOM crash above, queries still
+occasionally failed in the browser with a reported CORS error -- but a
+direct `curl` against the same endpoint returned a perfectly valid,
+correctly-CORS-headed response. The response just took 12.9-15.5 seconds,
+consistently, across every request tested. Breaking down the latency:
+`embedding_ms` alone was 12.8-14.4 seconds, for a computation that takes
+5-25ms locally. That's roughly a 700x slowdown, far beyond what "shared
+vCPU contention" alone would explain -- a well-known PyTorch-in-containers
+failure mode explains it precisely: torch sizes its intra-op thread pool to
+the number of CPUs it can *see* on the host, not the CPU quota the
+container's cgroup actually enforces. Railway's trial plan gives a fraction
+of a shared vCPU; if the underlying host reports many more cores than that
+quota allows, torch spins up a thread pool sized for hardware it doesn't
+actually have access to, and the resulting scheduling contention
+(threads fighting over a sliver of real CPU time) is catastrophic rather
+than just slow. The intermittent browser-side "CORS" errors were a
+symptom, not the disease: a request stalling past whatever timeout Railway's
+edge proxy enforces gets killed before headers are ever evaluated, and
+Chrome sometimes surfaces that as a CORS policy violation rather than a
+timeout, because from the browser's perspective the response never
+completed either way.
+
+Fixed in `api/main.py`, before any torch-importing module loads:
+`OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`, and `torch.set_num_threads(1)`.
+This is not a workaround for THIS deployment's oddities -- pinning thread
+count under a cgroup CPU quota is the standard, documented fix for
+running PyTorch in any resource-limited container, and costs nothing on a
+machine that genuinely has multiple cores available to it (single-threaded
+inference on a already-small model is not meaningfully slower there).
+
 Also corrected in the same pass: the "Semantic" and "Keyword" demo buttons
 originally asked meta-questions about "this dataset" itself (e.g. "what are
 the key findings in this dataset"), which the corpus -- a pool of ~6,000
