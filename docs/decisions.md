@@ -159,8 +159,23 @@ tradeoff, not an oversight.
 ## Generation: Gemini, not Claude
 
 Initially built against the Anthropic Messages API (`claude-haiku-4-5`).
-Switched to Google's Gemini API (`google-genai` SDK, `gemini-flash-latest`)
-per explicit direction. The switch only touches `src/generation/llm_client.py`
-and config (`generation.provider`/`model`) -- the prompt construction,
-guardrails, and orchestrator are provider-agnostic by design (they depend
-only on `LLMClient.generate(query, context) -> GenerationResult`).
+Switched to Google's Gemini API (`google-genai` SDK) per explicit direction.
+The switch only touches `src/generation/llm_client.py` and config
+(`generation.provider`/`model`) -- the prompt construction, guardrails, and
+orchestrator are provider-agnostic by design (they depend only on
+`LLMClient.generate(query, context) -> GenerationResult`).
+
+**Model choice within Gemini**: `gemini-2.5-flash` and `gemini-2.0-flash`
+both returned `404` ("no longer available to new users") when actually
+called -- the API's own error message pointed at `gemini-3.6-flash` as the
+current replacement, confirming the value of testing against the live API
+rather than trusting a remembered model name. `gemini-3.6-flash` does work,
+but is a "thinking" model by default: in testing it took **16.4s** for a
+3-sentence grounded answer and the visible output was truncated mid-sentence
+even with `max_output_tokens=300`, because thinking tokens are drawn from
+the same budget as output tokens. That's disqualifying for a latency-critical
+demo. `gemini-flash-lite-latest` answered the same grounded-QA prompt
+correctly (including declining when context was insufficient, and ignoring
+an injected instruction embedded in retrieved context) in under a second
+(918ms / 1021ms across two runs), so it's the configured default
+(`configs/*.yaml: generation.model`).

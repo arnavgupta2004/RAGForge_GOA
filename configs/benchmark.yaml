@@ -51,7 +51,7 @@ guardrails:
 
 generation:
   provider: gemini
-  model: gemini-flash-latest
+  model: gemini-flash-lite-latest
   max_tokens: 300
   temperature: 0.0
   timeout_s: 12

@@ -17,6 +17,7 @@ Run: python scripts/benchmark.py --n 100
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import random
 import sys
@@ -24,6 +25,10 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from src.embeddings.embedder import Embedder
 from src.generation.llm_client import GenerationError, LLMClient
@@ -64,6 +69,7 @@ async def main() -> None:
     parser.add_argument("--config", default="configs/benchmark.yaml")
     parser.add_argument("--n", type=int, default=100)
     parser.add_argument("--cold-n", type=int, default=5, help="how many of the first requests count as 'cold'")
+    parser.add_argument("--rpm", type=int, default=12, help="requests/minute cap (free-tier Gemini quota is 15); pacing doesn't affect per-request latency, only how long the whole run takes")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -87,9 +93,12 @@ async def main() -> None:
     random.seed(RANDOM_SEED)
     sample = random.sample(all_queries, min(args.n, len(all_queries)))
 
+    delay_s = 60.0 / args.rpm
     per_request: list[dict] = []
-    print(f"Running {len(sample)} live requests against the full pipeline...", file=sys.stderr)
+    print(f"Running {len(sample)} live requests against the full pipeline (paced at {args.rpm}/min)...", file=sys.stderr)
     for i, q in enumerate(sample):
+        if i > 0:
+            await asyncio.sleep(delay_s)
         t0 = time.perf_counter()
         response = await run_pipeline(deps, query_text=q["eng_query"])
         wall_ms = (time.perf_counter() - t0) * 1000
@@ -132,6 +141,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    import asyncio
-
     asyncio.run(main())
